@@ -6,6 +6,9 @@ from usr_manual import usr_manual
 
 if __name__ == "__main__":
     clear_console()
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    os.chdir(script_dir)
+
     program.start()
 
     while True:

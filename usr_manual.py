@@ -45,7 +45,7 @@ def gen_page(title, desc, functions):
 
 
 usr_manual = ["""
-Ah so you are one of the 4 or so people in the entire world that has downloaded this journalling program.
+Ah so you are one of the 4 or so people in the entire world that has downloaded this journaling program.
 Good on you, and also thanks :)
 
 The idea of this program is that every entry you make is automatically timestamped, so you can use

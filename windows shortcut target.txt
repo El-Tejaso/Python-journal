@@ -1,0 +1,6 @@
+Paste the following line into the target section of a windows shortcut, 
+then set the "Start in" property to blank.
+If you have a python in your PATH (true if you can call python from any directory in the command prompt),
+then the shortcut will work.
+
+C:\Windows\System32\cmd.exe /C "python ^"Path\To\Script\Folder\journaling.py^""
