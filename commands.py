@@ -1,5 +1,7 @@
 from queue import Queue
 
+from actions import clear_console
+
 
 command_dict = {}
 
@@ -26,6 +28,7 @@ def get_input():
 
     if arg.lower() == "exit":
         print("exiting program...")
+        clear_console()
         exit(0)
 
     return arg
@@ -80,4 +83,3 @@ def print_help(functions):
 def clear_args():
     while __args.qsize() > 0:
         __args.get()
-        

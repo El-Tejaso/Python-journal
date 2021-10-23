@@ -1,3 +1,4 @@
+import enum
 import sys
 from commands import *
 from actions import *
@@ -360,15 +361,64 @@ def view():
         day = int(arg2)
     elif arg1 != None:
         named_day = arg1
+        date = namedday_this_week_to_date(named_day)
+        if date == None:
+            return
+
+        day = date.day
+        month = date.month
         
     filepath = entry.get_entry(current_journal, year, month, day)
 
     if filepath == None:
         print(f"There is no entry for {year}/{month}/{day}  (Y/M/D)")
         return
+    else:
+        print(f"Pulling up entry for {year}/{month}/{day}  (Y/M/D) in an external editor...")
 
     open_file(filepath)
 
+
+def namedday_this_week_to_date(named_day : str):
+    '''
+    Returns the day of the month for a day in the week.
+    So if named_day = monday, the function returns the whatever of this month corresponding to this week.
+    Returns -1 if that day hasn't happened yet this week.
+'''
+    named_day = named_day.lower()
+    
+    wanted_day_idx = day_week_index(named_day)
+    if wanted_day_idx == -1:
+        print(f"{named_day} does not remotely resemble any day")
+        return None
+
+    today = get_today()
+    today_day_idx = day_week_index(today.strftime("%A").lower())
+
+    if wanted_day_idx > today_day_idx:
+        print(f"today is {days_of_week[today_day_idx]}, so {days_of_week[wanted_day_idx]} has not happened yet.")
+        return
+
+    delta = wanted_day_idx - today_day_idx
+    
+    return today + datetime.timedelta(delta)
+
+days_of_week = [
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday",
+    "sunday",
+]
+
+def day_week_index(wanted_day):
+    for i, day in enumerate(days_of_week):
+        if wanted_day in day:
+            return i
+
+    return -1
 
 @command 
 def list():
@@ -525,7 +575,7 @@ def get_entry_list():
 
 @command
 def entries():
-    '''Print a breakdown of every single entries that are in the journal'''
+    '''Shows a breakdown of all entries in the journal'''
     clear_console()
 
     entry_map = get_entry_list()
