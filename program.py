@@ -118,13 +118,44 @@ def write_journal_and_console(text):
     write_into_journal(text)
     write_into_console(text)
 
+
 @command
 def show():
-    '''Show all text in today's journal entry'''
+    '''Usage: show [filter?]
+Show all entries in today's journal, filtered on 'tasks' or 'journals' if specified.'''
+
     clear_console()
     existing_text = get_journal_text()
-    print(existing_text)
 
+    filter = get_input_if_present()
+    if filter == None:
+        print(existing_text)
+        return
+
+    filter_map = {
+        "tasks" : 0, 
+        "journals" : 1,
+    }
+
+    if filter not in filter_map:
+        filter_list = ", ".join(filter_map)
+        print(f"{filter} is not a valid filter, use one of: {filter_list}")
+        return
+    
+    parts = existing_text.split("\n\n")
+    filter_num = filter_map[filter]
+
+    parts = [x for x in parts if get_part_type(x)==filter_num or get_part_type(x)==-1]
+    print("\n\n".join(parts))
+
+def get_part_type(part : str):
+    if part.count("'''") >= 2:
+        return 1
+
+    if timestamp_regex.search(part) == None:
+        return -1
+
+    return 0
 
 def print_existing_text():
     existing_text = get_journal_text()
@@ -419,6 +450,11 @@ def cdeltas():
     """Usage: cdeltas [minutes?]\nSame as 'deltas', but smaller tasks are grouped into a 'minutes' interval where applicable"""
     clear_console()
 
+    minutes = get_input_if_present()
+    if minutes == None:
+        minutes = 30
+
+
     dl = delta_list(True)
 
     collapsed_list = []
@@ -428,7 +464,7 @@ def cdeltas():
     for prev, next, delta in dl:
         tasks.append(prev)
 
-        if total_time + delta > 30:
+        if total_time + delta > minutes:
             collapsed_list.append((tasks, total_time))
             tasks = []
             total_time = 0

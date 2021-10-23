@@ -5,9 +5,10 @@ from actions import *
 
 @command
 def help():
+    """Usage: help [command?]
+Prints a command's docstring. If none is specified, prints help for all commands
+"""
     clear_console()
-    
-    '''Prints a command's docstring. If called with no arguments, prints all available commands, and their docstrings'''
     particular = get_input_if_present()
 
     if particular == None:
