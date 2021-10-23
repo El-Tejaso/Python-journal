@@ -62,5 +62,13 @@ def get_entries_sorted(journal_name, year, month):
 
 	return files
 
+def get_entry(journal_name, year, month, day):
+	files = get_entries_sorted(journal_name, year, month)
+
+	for file in files:
+		if str(day) in os.path.basename(file):
+			return file
+	return None
+
 def get_journal_name():
 	return Path(os.path.abspath(".")).parts[-1]

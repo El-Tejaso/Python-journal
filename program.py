@@ -75,14 +75,14 @@ def set_journal(num):
     current_journal = available_journals[num]
 
     today = get_today()
-    current_filepath = get_journal_filepath(today)
+    current_filepath = make_journal_filepath(today)
 
     show()
 
 def get_today():
     return datetime.date.today()
 
-def get_journal_filepath(date):
+def make_journal_filepath(date):
     journal_dir = Path(current_journal).joinpath(entry.date_folder(date))
     if not journal_dir.exists():
         journal_dir.mkdir(parents=True)
@@ -342,7 +342,32 @@ def start():
 @command
 def view():
     '''Opens the journal text file in your default text editor.'''
-    open_file(current_filepath)
+    arg1 = get_input_if_present()
+    arg2 = get_input_if_present()
+    arg3 = get_input_if_present()
+
+    today = get_today()
+    year = today.year
+    month = today.month
+    day = today.day
+
+    if arg3 != None:
+        year = int(arg1)
+        month = int(arg2)
+        day = int(arg3)
+    elif arg2 != None:
+        month = int(arg1)
+        day = int(arg2)
+    elif arg1 != None:
+        named_day = arg1
+        
+    filepath = entry.get_entry(current_journal, year, month, day)
+
+    if filepath == None:
+        print(f"There is no entry for {year}/{month}/{day}  (Y/M/D)")
+        return
+
+    open_file(filepath)
 
 
 @command 
