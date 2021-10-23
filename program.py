@@ -161,7 +161,7 @@ def print_existing_text():
         write_journal_and_console(heading)
 
 
-def generic_input_to_journal(top, opening, closing, is_newline, input_fn, bullet=""):
+def generic_input_to_journal(top, opening, closing, is_newline, input_fn, bullet="", show_existing=True):
     clear_console()
 
     if current_journal == None:
@@ -170,7 +170,8 @@ def generic_input_to_journal(top, opening, closing, is_newline, input_fn, bullet
 
     print(top)
 
-    print_existing_text()
+    if show_existing:
+        print_existing_text()
 
     if is_newline:
         write_journal_and_console("\n")    
@@ -198,7 +199,8 @@ def journal():
         top="\n\n\n----Started journaling:\n", 
         opening="'''", 
         closing="'''\n",
-        input_fn=input_fn
+        input_fn=input_fn,
+        show_existing=False
         )
 
 
@@ -430,10 +432,10 @@ def view():
     filepath = entry.get_entry(current_journal, year, month, day)
 
     if filepath == None:
-        print(f"There is no entry for {year}/{month}/{day}  (Y/M/D)")
+        print(f"There is no entry for {year}/{month}/{day}")
         return
     else:
-        print(f"Pulling up entry for {year}/{month}/{day}  (Y/M/D) in an external editor...")
+        print(f"Pulling up entry for {year}/{month}/{day} in an external editor...")
 
     open_file(filepath)
 
