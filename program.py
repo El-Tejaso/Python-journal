@@ -19,6 +19,7 @@ timestamp_regex = re.compile(r"(\d\d|\d):(\d\d|\d) (AM|PM)")
 two_dig_number_regex = re.compile(r"(\d\d|\d)")
 
 Timestamp = namedtuple("Timestamp", "hours minutes indent")
+Activity = namedtuple("Activity", "line time")
 
 def refresh_journals():
     global available_journals
@@ -177,7 +178,7 @@ def generic_input_to_journal(top, opening, closing, is_newline, input_fn, bullet
         write_journal_and_console("\n")    
 
     write_journal_and_console(bullet)
-    write_journal_and_console(f"{timestamp()} - ")
+    write_journal_and_console(f"{now_timestamp()} - ")
     write_journal_and_console(opening)
 
     input_fn()
@@ -288,19 +289,21 @@ def get_typed_input(fn, bullet):
         fn(line)
 
 
-def timestamp():
-    suffix = "AM"
-    now = datetime.datetime.now()
-    hour = now.hour
+def format_timestamp_tuple(ts):
+    return format_timestamp(ts.hours, ts.minutes)
 
+def format_timestamp(hour, minute):
+    suffix = "AM"
     if hour >= 12:
         suffix = "PM"
         if hour > 12:
             hour -= 12
-    
-    minute = now.minute
 
     return f"{hour}:{entry.to_2dig_number(minute)} {suffix}"
+
+def now_timestamp():
+    now = datetime.datetime.now()
+    return format_timestamp(now.hour, now.minute)
 
 def write_into_journal(text):
     with open(current_filepath, encoding="utf-8", mode="a") as file:
@@ -540,7 +543,7 @@ def timedelta(a, b):
     return to_minutes(b) - to_minutes(a)
 
 
-def get_line_times():
+def get_activities():
     existing_text = get_journal_text()
     lines = existing_text.split('\n')
     
@@ -551,7 +554,7 @@ def get_line_times():
         if time==None:
             continue
 
-        line_times.append((line, time))
+        line_times.append(Activity(line, time))
 
     return line_times
 
@@ -561,19 +564,20 @@ def minutes_str(minutes):
     return f"{hours}h {mins}m"
 
 def delta_list(ongoing = False):
-    line_times = get_line_times()
+    line_times = get_activities()
     line_times = [x for x in line_times if x[1].indent == 0]
     
     res = []
 
     for a, b in zip(line_times, islice(line_times, 1, None)):
-        delta = timedelta(a[1], b[1])
-        res.append((a[0], b[0], delta))
+        delta = timedelta(a.time, b.time)
+        res.append((a, b, delta))
 
     if ongoing:
         now = datetime.datetime.now()
-        delta = timedelta(line_times[-1][1], Timestamp(now.hour,  now.minute, 0))
-        res.append((line_times[-1][0], "Now", delta))
+        now_ts = Timestamp(now.hour,  now.minute, 0)
+        delta = timedelta(line_times[-1].time, now_ts)
+        res.append((line_times[-1], Activity(f"{now_timestamp()} - Now", now_ts), delta))
 
     return res
 
@@ -585,9 +589,23 @@ def deltas():
     dl = delta_list(True)
 
     for prev, next, delta in dl:
-        print(f"[{prev}]")
-        print(f"\t{minutes_str(delta)}\n")
+        print(f"{prev.line}")
+        print(f"\t[{minutes_str(delta)}]")
+    
+    print(f"{dl[-1][1].line}")
+    total()
 
+@command
+def total():
+    # TODO: FIX
+    # It would be much more efficient to just get the first activity, get now, and
+    # do a single diff, but Im doing it like this because im tired (lmao)
+    dl = delta_list(True)
+    total = 0
+    for prev, next, delta in dl:
+        total += delta
+
+    print(f"\nTotal: {minutes_str(total)}")
 
 @command
 def cdeltas():
@@ -610,27 +628,27 @@ than 'minutes' minutes get clustered together to reduce clutter"""
 
     for prev, next, delta in dl:
         tasks.append(prev)
+        total_time += delta
 
-        if total_time + delta > minutes:
+        if total_time > minutes:
             collapsed_list.append((tasks, total_time))
             tasks = []
             total_time = 0
 
-        total_time += delta
-
     for collapsed_tasks, delta in collapsed_list:
-        timestamp_part = timestamp_regex.search(collapsed_tasks[0])[0]
-
-        collapsed_tasks = [timestamp_regex.sub("", x) for x in collapsed_tasks]
-
         if len(collapsed_tasks) <= 1:
-            print(f"{timestamp_part} - {collapsed_tasks[0]}")
-            print(f"\t{minutes_str(delta)}")
+            print(f"{collapsed_tasks[0].line}")
         else:
-            print(f"{timestamp_part} - {len(collapsed_tasks)} smaller tasks:")
-            smaller_tasks_commasep = ", ".join(collapsed_tasks)
+            ts = collapsed_tasks[0].time
+            timestamp = format_timestamp_tuple(ts)
+            print(f"{timestamp} - {len(collapsed_tasks)} smaller tasks:")
+            smaller_tasks_commasep = ", ".join([x.line for x in collapsed_tasks])
             print(f"\t-[{smaller_tasks_commasep}]")
-            print(f"\t{minutes_str(delta)}\n")
+
+        print(f"\t[{minutes_str(delta)}]")
+
+    print(f"{now_timestamp()} - {dl[-1][1]}")
+    
 
 
 def get_entry_list():
@@ -658,4 +676,4 @@ def entries():
         return f" {entry.to_2dig_number(len(v))} entries " + "|" * len(v)
     
     entry_list = [f"{k} : {process_v(v)}" for k,v in entry_map.items()]
-    print("\n\t".join(entry_list))
+    print("'t" + "\n\t".join(entry_list))
