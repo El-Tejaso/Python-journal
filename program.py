@@ -20,11 +20,6 @@ two_dig_number_regex = re.compile(r"(\d\d|\d)")
 
 Timestamp = namedtuple("Timestamp", "hours minutes indent")
 
-@command
-def test():
-    '''A test function'''
-    print("it worked")
-
 def refresh_journals():
     global available_journals
     dirs = os.listdir(os.curdir)
@@ -39,8 +34,7 @@ def list_journals():
 @command
 def new():
     '''
-    Usage: new [Name] - ensures a new journal with the specified name.
-    Characters that can't be in folders cannot be used.
+    Creates a new journal with the specified name, and then immediately calls 'set'.
     '''
     clear_console()
     name = ask_input_if_not_present("Enter the name of the new journal:")
@@ -194,7 +188,7 @@ def generic_input_to_journal(top, opening, closing, is_newline, input_fn, bullet
 
 @command
 def journal():
-    '''Write a journal entry into the current journal'''
+    '''Create a journal entry that spans multiple lines. Type 'end' on it's own on a single line to close the entry.'''
 
     def input_fn():
         multiline_input("\t")
@@ -240,7 +234,18 @@ def t():
 
 @command 
 def bgtask():
-    """Same as 'task' but with an * at the start to denote it as a background task"""
+    """- The exact same as task, but with a * at the start of it, denoting that
+    this task is something that you are doing alongside the main set of tasks. 
+    - if you're in a zoom meeting while you're working on other stuff, then use this to 
+        track the zoom meeting without breaking out of the task you currently have active.
+            - The issue here is that when you type 'note', this will create an indented paragraph
+            on the direct next line, annotating the bgtask.
+            but you may have wanted to annotate the normal task, which requires a newline.
+        Because of this reason, this is an unstable feature at the moment
+
+    - They cannot be tracked in the same way as normal tasks
+        in fact, I don't actually know how to track them"""
+
     generic_task(background_level=1)
 
 @command
@@ -250,10 +255,11 @@ def bgt():
 
 @command
 def note():
-    '''Write a new note into the current journal. 
-A note is the same functionality as 'task', but indented once, and without a newline at the start.
-As such, it can be used in conjunction with basically anything else.
-Add your own indentations if you want a hierarchy, because that is too much effort to implement.'''
+    '''- These are indented by 1, and are used to annotate the entries above them.
+They work by not making a newline at the start, so they remain visually
+connected to the stuff above them.
+A similar technique is being used here and now to connect the commands to their 
+descriptions.'''
 
     generic_input_to_journal(
         is_newline=False, 
@@ -341,7 +347,7 @@ def start():
         print(list_journals())
 
         set_journal(0)
-        print(f"\nThe current journal is {0} ({current_journal}).\n")
+        print(f"\nThe current journal is {0} ({current_journal}).\n Use 'help' to get help.")
 
 def ensure_config():
     '''This function will ask the user to input configuration details if they 
@@ -377,7 +383,22 @@ def path_is_accessible(path):
 
 @command
 def view():
-    '''Opens the journal text file in your default text editor.'''
+    ''' Usage: view
+        Opens today's text file in your default text editor.
+
+    Usage: view [year] [month] [day]
+        Opens the entry for year/month/day if it exists
+
+    Usage: view [month] [day]
+        Opens the entry for <this year>/month/day if it exists
+
+    Usage: view [day]
+        if day is is monday, tuesday, wednesday, etc.:
+            Opens the entry for 'day' of this week.
+            Probably one of the most useful commands imo.
+        if day is a number:
+            Opens the entry for <this year>/<this month>/day
+'''
     arg1 = get_input_if_present()
     arg2 = get_input_if_present()
     arg3 = get_input_if_present()
@@ -395,13 +416,16 @@ def view():
         month = int(arg1)
         day = int(arg2)
     elif arg1 != None:
-        named_day = arg1
-        date = namedday_this_week_to_date(named_day)
-        if date == None:
-            return
+        try:
+            day = int(arg1)
+        except:
+            named_day = arg1
+            date = namedday_this_week_to_date(named_day)
+            if date == None:
+                return
 
-        day = date.day
-        month = date.month
+            day = date.day
+            month = date.month
         
     filepath = entry.get_entry(current_journal, year, month, day)
 
@@ -457,7 +481,13 @@ def day_week_index(wanted_day):
 
 @command 
 def list():
-    """Same as 'note', but multiple dot-points all at once"""
+    """ - Create notes that span multiple lines.
+    - a
+    - little bit
+    - like 
+    - this
+    - write 'end' on a single line to close the entry.
+    """
 
     def input_fn():
         multiline_input("\t- ")
@@ -471,7 +501,9 @@ def list():
         bullet="\t"
         )
 
-
+@command
+def l():
+    """An alias for 'list'"""
 
 def parse_timestamp(line : str):
     indent = 0
@@ -557,7 +589,10 @@ def deltas():
 
 @command
 def cdeltas():
-    """Usage: cdeltas [minutes?]\nSame as 'deltas', but smaller tasks are grouped into a 'minutes' interval where applicable"""
+    """Usage: cdeltas [minutes?]
+Same as 'deltas', but smaller tasks that happen in a row that are fewer
+than 'minutes' minutes get clustered together to reduce clutter"""
+
     clear_console()
 
     minutes = get_input_if_present()

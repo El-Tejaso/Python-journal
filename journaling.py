@@ -2,21 +2,7 @@ from commands import *
 import os
 import program
 from actions import *
-
-@command
-def help():
-    """Usage: help [command?]
-Prints a command's docstring. If none is specified, prints help for all commands
-"""
-    clear_console()
-    particular = get_input_if_present()
-
-    if particular == None:
-        print("All commands:")
-        print_help(command_dict.values())
-        print(f"\texit - exits the program\n")
-    else:
-        print_help([command_dict[particular]])
+from usr_manual import usr_manual
 
 if __name__ == "__main__":
     clear_console()
