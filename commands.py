@@ -76,3 +76,8 @@ def print_help(functions):
     for fn in functions:
         doc = (fn.__doc__ if fn.__doc__ != None else "This command isn't documented.")
         print(f"\t{fn.__name__} -> {doc}\n")
+
+def clear_args():
+    while __args.qsize() > 0:
+        __args.get()
+        

@@ -31,3 +31,7 @@ if __name__ == "__main__":
         if not run_command(co):
             if not program.default_handler(co):
                 print(f"{co} isn't a valid command. Type 'help' for a list of all valid commands.")
+
+        # prevents bugs from where the previous command doesn't complete properly
+        # and then the rest of the args are still in the queue
+        clear_args()
