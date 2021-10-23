@@ -39,7 +39,7 @@ def list_journals():
 @command
 def new():
     '''
-    Usage: new [Name] - Creates a new journal with the specified name.
+    Usage: new [Name] - ensures a new journal with the specified name.
     Characters that can't be in folders cannot be used.
     '''
     clear_console()
@@ -70,7 +70,7 @@ def set_journal(num):
     global current_journal, current_filepath
 
     refresh_journals()
-    if num >= len(current_journal):
+    if num >= len(available_journals):
         print("Pick a valid number.")
         return
     current_journal = available_journals[num]
@@ -323,7 +323,10 @@ def write_carat():
 
 def start():
     global current_journal
-    with open("path.txt") as file:
+
+    ensure_config()
+    
+    with open("path.txt", encoding="utf-8", mode="r") as file:
         root = file.read().strip()
         os.chdir(root)
 
@@ -339,6 +342,38 @@ def start():
 
         set_journal(0)
         print(f"\nThe current journal is {0} ({current_journal}).\n")
+
+def ensure_config():
+    '''This function will ask the user to input configuration details if they 
+    are not already present, or are otherwise corrupted/unreachable'''
+
+    if os.path.exists("path.txt"):
+        with open("path.txt", encoding="utf-8", mode="r") as file:
+            path = file.read().strip()
+            if path_is_accessible(path):
+                return
+
+    print("What folder would you like your journals to be stored in?")
+
+    usr_selected_path = ""
+    while True:
+        write_into_console("Enter a folder path: ")
+        usr_selected_path = input()
+
+        if path_is_accessible(usr_selected_path):
+            break
+
+        print("That folder is either nonexistant or non-accessible, try again.")
+
+    with open("path.txt", encoding="utf-8", mode="w") as file:
+        file.write(usr_selected_path)
+
+def path_is_accessible(path):
+    if os.path.exists(path):
+        if os.access(path, os.R_OK) and os.access(path, os.W_OK):
+            return True
+
+    return False
 
 @command
 def view():
