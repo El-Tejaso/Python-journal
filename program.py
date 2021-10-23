@@ -485,4 +485,30 @@ def cdeltas():
             print(f"\t-[{smaller_tasks_commasep}]")
             print(f"\t{minutes_str(delta)}\n")
 
-        
+
+def get_entry_list():
+    years = os.listdir(current_journal)
+    entry_map = {}
+
+    for year_path in years:
+        for month_path in os.listdir(os.path.join(current_journal, year_path)):
+            year = Path(year_path).parts[-1]
+            month = Path(month_path).parts[-1]
+            entry_map[year + " " + month] = entry.get_entries_sorted(current_journal, year, month)
+
+    return entry_map
+
+@command
+def entries():
+    '''Print a breakdown of every single entries that are in the journal'''
+    clear_console()
+
+    entry_map = get_entry_list()
+
+    print("Entries:")
+
+    def process_v(v):
+        return f" {entry.to_2dig_number(len(v))} entries " + "|" * len(v)
+    
+    entry_list = [f"{k} : {process_v(v)}" for k,v in entry_map.items()]
+    print("\n\t".join(entry_list))

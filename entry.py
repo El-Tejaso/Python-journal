@@ -47,9 +47,14 @@ def get_path_date_str(pathstr : str):
 
 	return os.sep.join([path.parts[-3], path.parts[-2], str(get_path_day(path.parts[-1]))])
 
-def get_entries_sorted(year, month):
-	path = Path(str(year), str(to_2dig_number(month))).joinpath("*.txt")
+def get_entries_sorted(journal_name, year, month):
+	path = Path(journal_name)
+	path = path.joinpath(str(year))
+	path = path.joinpath(str(to_2dig_number(month)))
+	path = path.joinpath("*.txt")
+
 	files = glob.glob(str(path))
+
 	files = [path for path in files if is_valid_journal(path)]
 
 	if len(files) >= 1:
