@@ -582,7 +582,7 @@ def delta_list(ongoing = False):
     return res
 
 @command
-def deltas():
+def times():
     '''Show how much time has passed between each event'''
     clear_console()
 
@@ -608,9 +608,9 @@ def total():
     print(f"\nTotal: {minutes_str(total)}")
 
 @command
-def cdeltas():
-    """Usage: cdeltas [minutes?]
-Same as 'deltas', but smaller tasks that happen in a row that are fewer
+def clusteredtimes():
+    """Usage: clusteredtimes [minutes?]
+Same as 'times', but smaller tasks that happen in a row that are fewer
 than 'minutes' minutes get clustered together to reduce clutter"""
 
     clear_console()
@@ -635,6 +635,10 @@ than 'minutes' minutes get clustered together to reduce clutter"""
             tasks = []
             total_time = 0
 
+    collapsed_list.append((tasks, total_time))
+    tasks = []
+    total_time = 0
+
     for collapsed_tasks, delta in collapsed_list:
         if len(collapsed_tasks) <= 1:
             print(f"{collapsed_tasks[0].line}")
@@ -643,11 +647,13 @@ than 'minutes' minutes get clustered together to reduce clutter"""
             timestamp = format_timestamp_tuple(ts)
             print(f"{timestamp} - {len(collapsed_tasks)} smaller tasks:")
             smaller_tasks_commasep = ", ".join([x.line for x in collapsed_tasks])
-            print(f"\t-[{smaller_tasks_commasep}]")
+            print(f" - {smaller_tasks_commasep}")
 
         print(f"\t[{minutes_str(delta)}]")
 
-    print(f"{now_timestamp()} - {dl[-1][1]}")
+    print(f"{dl[-1][1].line}\n")
+
+    total()
     
 
 
@@ -676,4 +682,4 @@ def entries():
         return f" {entry.to_2dig_number(len(v))} entries " + "|" * len(v)
     
     entry_list = [f"{k} : {process_v(v)}" for k,v in entry_map.items()]
-    print("'t" + "\n\t".join(entry_list))
+    print("\t" + "\n\t".join(entry_list))

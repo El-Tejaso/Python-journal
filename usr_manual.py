@@ -73,7 +73,7 @@ gen_page("Writing commands part 2",
     ),
 gen_page("Analysis commands (more coming eventually)",
     "Use these to analyze today's entries.",
-    [deltas, cdeltas, entries]
+    [times, clusteredtimes, entries]
     ),
     gen_page("Somewhat useless but nice to have",
     "(Self explanatory)",
