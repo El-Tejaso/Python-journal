@@ -14,7 +14,7 @@ Usage: help [command]
     Prints a command's docstring.
 """
     clear_console()
-    particular = get_input_if_present()
+    particular = get_input()
 
     if particular == None:
         for i, page in enumerate(usr_manual):

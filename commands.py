@@ -1,15 +1,21 @@
 from queue import Queue
-
 from actions import clear_console
 
+def exit_program():
+    print("exiting program...")
+    clear_console()
+    exit(0)
 
-command_dict = {}
+command_dict = {
+    "exit": exit_program
+}
+
+__args = Queue()
+
 
 def command(fn):
     command_dict[fn.__name__] = fn
     return fn
-
-__args = Queue()
 
 def push_command(arg):
     args = arg.split(' ')
@@ -26,20 +32,15 @@ def get_input():
 
     arg = __args.get()
 
-    if arg.lower() == "exit":
-        print("exiting program...")
-        clear_console()
-        exit(0)
-
     return arg
 
-def get_input_if_present():
+def get_input():
     if __args.qsize() != 0:
         return __args.get()
 
     return None
 
-def get_line_if_present():
+def get_line():
     if __args.qsize() != 0:
         line = []
         while __args.qsize() != 0:
@@ -49,8 +50,8 @@ def get_line_if_present():
 
     return None
 
-def ask_line_if_not_present(message_if_not_present = None):
-    line = get_line_if_present()
+def ask_line(message_if_not_present = None):
+    line = get_line()
     if line != None:
         return line
 
@@ -60,8 +61,8 @@ def ask_line_if_not_present(message_if_not_present = None):
     line = input()
     return line
 
-def ask_input_if_not_present(message_if_not_present = ""):
-    line = get_input_if_present()
+def ask_input(message_if_not_present = ""):
+    line = get_input()
     if line == None:
         print(message_if_not_present)
         return get_input()

@@ -32,13 +32,37 @@ def list_journals():
     journals = [f"[{i}] {x}" for i, x in enumerate(journals)]
     return "\n".join(journals)
 
+
+def run():
+    line = ask_line()
+
+    if line == None:
+        # Since there is only a single word, I may have actually tried typing a command here
+        # so I will not auto-add a task here
+        return
+        
+    if line.startswith("-"):
+        push_command(line[1:].strip())
+        note()
+    elif line.startswith("'''"):
+        push_command(line[3:])
+        journal()
+    elif line.startswith("/"):
+        push_command(line[1:].strip())
+        comm = get_input()
+        run_command(comm)
+    else:
+        push_command(line)
+        task()
+
+
 @command
 def new():
     '''
     Creates a new journal with the specified name, and then immediately calls 'set'.
     '''
     clear_console()
-    name = ask_input_if_not_present("Enter the name of the new journal:")
+    name = ask_line("Enter the name of the new journal:")
 
     try:
         os.mkdir(name)
@@ -56,7 +80,7 @@ def set():
 
     refresh_journals()
 
-    num = int(ask_input_if_not_present(f"Pick a journal:\n{list_journals()}"))
+    num = int(ask_line(f"Pick a journal:\n{list_journals()}"))
 
     set_journal(num)
 
@@ -123,7 +147,7 @@ Show all entries in today's journal, filtered on 'tasks' or 'journals' if specif
     clear_console()
     existing_text = get_journal_text()
 
-    filter = get_input_if_present()
+    filter = get_line()
     if filter == None:
         print(existing_text)
         return
@@ -190,7 +214,7 @@ def generic_input_to_journal(top, opening, closing, is_newline, input_fn, bullet
 
 @command
 def journal():
-    '''Create a journal entry that spans multiple lines. Type 'end' on it's own on a single line to close the entry.'''
+    '''Create a journal entry that spans multiple lines. Type \'\'\' on it's own on a single line to close the entry.'''
 
     def input_fn():
         multiline_input("\t")
@@ -209,10 +233,10 @@ def multiline_input(bullet):
     def to_journal(line):
         write_into_journal(f"{bullet}{line}\n")
 
-    get_typed_input(to_journal, bullet)
+    get_typed_input(to_journal, bullet, ending_line="'''")
 
 def single_line_input():
-    line = ask_line_if_not_present()
+    line = get_line()
     write_into_journal(f"{line}\n")
 
 def generic_task(background_level=0):
@@ -278,12 +302,12 @@ def n():
     """An alias for 'note'"""
     note()
 
-def get_typed_input(fn, bullet):
+def get_typed_input(fn, bullet, ending_line = "end"):
     while True:
         write_into_console(bullet)
 
-        line = ask_line_if_not_present()
-        if(line.lower() == "end"):
+        line = ask_line()
+        if(line == ending_line):
             break
         
         fn(line)
@@ -313,21 +337,6 @@ def write_into_journal(text):
 def cwd():
     '''Print the current path'''
     print(os.path.abspath(os.curdir))
-
-#handle things like monday
-def default_handler(arg):
-    line = get_line_if_present()
-
-    if line == None:
-        # Since there is only a single word, I may have actually tried typing a command here
-        # so I will not auto-add a task here
-        return False
-        
-    arg = arg + " " + line
-    push_command(arg)
-    task()
-
-    return True
 
 def write_carat():
     write_into_console(f"[{current_journal}]>")
@@ -404,9 +413,9 @@ def view():
         if day is a number:
             Opens the entry for <this year>/<this month>/day
 '''
-    arg1 = get_input_if_present()
-    arg2 = get_input_if_present()
-    arg3 = get_input_if_present()
+    arg1 = get_input()
+    arg2 = get_input()
+    arg3 = get_input()
 
     today = get_today()
     year = today.year
@@ -615,7 +624,7 @@ than 'minutes' minutes get clustered together to reduce clutter"""
 
     clear_console()
 
-    minutes = get_input_if_present()
+    minutes = get_input()
     if minutes == None:
         minutes = 30
 
