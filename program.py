@@ -41,13 +41,13 @@ def run():
         # so I will not auto-add a task here
         return
         
-    if line.startswith("-"):
+    if line.strip().startswith("-"):
         push_command(line[1:].strip())
         note()
-    elif line.startswith("'''"):
+    elif line.strip().startswith("'''"):
         push_command(line[3:])
         journal()
-    elif line.startswith("/"):
+    elif line.strip().startswith("/"):
         push_command(line[1:].strip())
         comm = get_input()
         run_command(comm)
@@ -55,6 +55,42 @@ def run():
         push_command(line)
         task()
 
+@command
+def journal():
+    """Any line starting with ''' will automatically execute this command.
+    Create a journal entry that spans multiple lines. 
+    Type ''' on it's own on a single line to close the entry."""
+
+    def input_fn():
+        multiline_input("\t")
+
+    generic_input_to_journal(
+        is_newline=True, 
+        top="\n\n\n----Started journaling:\n", 
+        opening="'''", 
+        closing="'''\n",
+        input_fn=input_fn,
+        show_existing=False
+        )
+
+@command
+def note():
+    '''Starting a line with - automatically executes this command. 
+Writes a new task but it's indented and directly on the next line, so its as if it's connected to whatever is above it.'''
+
+    generic_input_to_journal(
+        is_newline=False, 
+        top="", 
+        opening="", 
+        closing="",
+        input_fn=single_line_input,
+        bullet="\t"
+        )
+
+@command
+def task():
+    """Write a new task into the current journal. Add notes to the task with 'note'"""
+    generic_task()
 
 @command
 def new():
@@ -114,11 +150,6 @@ def make_journal_filepath(date):
     filepath = str(journal_file_dir)
     return filepath
 
-
-@command 
-def j():
-    '''Alias for journal'''
-    journal()
 
 def get_journal_text():
     existing_text = ""
@@ -212,22 +243,6 @@ def generic_input_to_journal(top, opening, closing, is_newline, input_fn, bullet
     clear_console()
     print_existing_text()
 
-@command
-def journal():
-    '''Create a journal entry that spans multiple lines. Type \'\'\' on it's own on a single line to close the entry.'''
-
-    def input_fn():
-        multiline_input("\t")
-
-    generic_input_to_journal(
-        is_newline=True, 
-        top="\n\n\n----Started journaling:\n", 
-        opening="'''", 
-        closing="'''\n",
-        input_fn=input_fn,
-        show_existing=False
-        )
-
 
 def multiline_input(bullet):
     def to_journal(line):
@@ -249,16 +264,6 @@ def generic_task(background_level=0):
         bullet = "*" * background_level
         )
 
-@command
-def task():
-    """Write a new task into the current journal. Add notes to the task with 'note'"""
-    generic_task()
-    
-@command
-def t():
-    """An alias for 'task'"""
-    task()
-
 @command 
 def bgtask():
     """- The exact same as task, but with a * at the start of it, denoting that
@@ -275,32 +280,6 @@ def bgtask():
 
     generic_task(background_level=1)
 
-@command
-def bgt():
-    """Alias for 'bgtask'"""
-    bgtask()
-
-@command
-def note():
-    '''- These are indented by 1, and are used to annotate the entries above them.
-They work by not making a newline at the start, so they remain visually
-connected to the stuff above them.
-A similar technique is being used here and now to connect the commands to their 
-descriptions.'''
-
-    generic_input_to_journal(
-        is_newline=False, 
-        top="", 
-        opening="", 
-        closing="",
-        input_fn=single_line_input,
-        bullet="\t"
-        )
-
-@command
-def n():
-    """An alias for 'note'"""
-    note()
 
 def get_typed_input(fn, bullet, ending_line = "end"):
     while True:
@@ -353,7 +332,7 @@ def start():
     refresh_journals()
     
     if len(available_journals) == 0:
-        print("You have no journals. Start a new journal with the 'new' command")
+        print("You have no journals. Type /tutorial for the tutorial")
     else:
         print(f"You have {len(available_journals)} journals:")
 
@@ -534,10 +513,10 @@ def parse_timestamp(line : str):
 
     #10:50 AM
     #      ^
-    is_am = timestamp_part[-2]=="A"
+    is_pm = timestamp_part[-2]=="P"
 
     hours = int(number_parts[0])
-    if not is_am:
+    if is_pm and hours != 12:
         hours += 12
     
     minutes = int(number_parts[1])

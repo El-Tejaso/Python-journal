@@ -2,16 +2,9 @@ from commands import *
 from program import *
 
 @command
-def help():
+def tutorial():
     """
-Usage: help
-    Prints a deliberately written user manual that should allow you to get up and running as fast as possible.
-
-Usage: help all
-    Prints every command, and it's documentation
-
-Usage: help [command]
-    Prints a command's docstring.
+This function starts a tutorial that teaches all core aspects of the program.
 """
     clear_console()
     particular = get_input()
