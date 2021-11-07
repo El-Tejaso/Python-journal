@@ -21,16 +21,99 @@ two_dig_number_regex = re.compile(r"(\d\d|\d)")
 Timestamp = namedtuple("Timestamp", "hours minutes indent")
 Activity = namedtuple("Activity", "line time")
 
+
+def start():
+    global current_journal
+
+    ensure_config()
+    
+    with open("path.txt", encoding="utf-8", mode="r") as file:
+        root = file.read().strip()
+        os.chdir(root)
+
+    refresh_journals()
+    
+    if len(available_journals) == 0:
+        new()
+    else:
+        set()
+
+
+@command
+def new():
+    '''
+    Creates a new journal with the specified name, and then immediately calls 'set'.
+    '''
+    clear_console()
+
+    while True:
+        name = ask_line("Enter the name of the new journal:")
+        try:
+            os.mkdir(name)
+            set()
+            break
+        except Exception as e:
+            print(f"the name '{name}' was probably invalid, try another one")
+            print(e)
+
+@command
+def set():
+    '''Usage: set [number] - Set the current journal with a number.'''
+    clear_console()
+
+    refresh_journals()
+    num = int(ask_line(f"Pick a journal:\n{list_journals()}"))
+    set_journal(num)
+
 def refresh_journals():
     global available_journals
     dirs = os.listdir(os.curdir)
     dirs.sort()
     available_journals = dirs
 
-def list_journals():
-    journals = [f"(Current)\t{x}" if x==current_journal else x for x in available_journals]
-    journals = [f"[{i}] {x}" for i, x in enumerate(journals)]
-    return "\n".join(journals)
+def set_journal(num):
+    global current_journal, current_filepath
+
+    refresh_journals()
+    if num >= len(available_journals):
+        print("Pick a valid number.")
+        return
+    current_journal = available_journals[num]
+
+    today = get_today()
+    current_filepath = make_journal_filepath(today)
+
+    show()
+
+
+@command
+def show():
+    '''Usage: show [filter?]
+Show all entries in today's journal, filtered on 'tasks' or 'journals' if specified.'''
+
+    clear_console()
+    existing_text = get_journal_text()
+
+    filter = get_line()
+    if filter == None:
+        print(existing_text)
+        return
+
+    filter_map = {
+        "tasks" : 0, 
+        "journals" : 1,
+    }
+
+    if filter not in filter_map:
+        filter_list = ", ".join(filter_map)
+        print(f"{filter} is not a valid filter, use one of: {filter_list}")
+        return
+    
+    parts = existing_text.split("\n\n")
+    filter_num = filter_map[filter]
+
+    parts = [x for x in parts if get_part_type(x)==filter_num or get_part_type(x)==-1]
+    print("\n\n".join(parts))
 
 
 def run():
@@ -55,6 +138,13 @@ def run():
         push_command(line)
         task()
 
+
+def list_journals():
+    journals = [f"(Current)\t{x}" if x==current_journal else x for x in available_journals]
+    journals = [f"[{i}] {x}" for i, x in enumerate(journals)]
+    return "\n".join(journals)
+
+
 @command
 def journal():
     """Any line starting with ''' will automatically execute this command.
@@ -67,11 +157,56 @@ def journal():
     generic_input_to_journal(
         is_newline=True, 
         top="\n\n\n----Started journaling:\n", 
-        opening="'''", 
+        opening="'''\n", 
         closing="'''\n",
         input_fn=input_fn,
         show_existing=False
         )
+
+
+def generic_input_to_journal(top, opening, closing, is_newline, input_fn, bullet="", show_existing=True):
+    clear_console()
+
+    if current_journal == None:
+        print("No journal has been set.")
+        return
+
+    print(top)
+
+    if show_existing:
+        print_existing_text()
+
+    if is_newline:
+        write_journal_and_console("\n")    
+
+    write_journal_and_console(bullet)
+    write_journal_and_console(f"{now_timestamp()} - ")
+    write_journal_and_console(opening)
+
+    input_fn()
+    
+    write_journal_and_console(closing)
+
+    clear_console()
+    print_existing_text()
+
+
+def multiline_input(bullet):
+    def to_journal(line):
+        write_into_journal(f"{bullet}{line}\n")
+
+    get_typed_input(to_journal, bullet, ending_line="'''")
+
+def get_typed_input(fn, bullet, ending_line = "end"):
+    line = ask_line()
+    while True:
+        write_into_console(bullet)
+
+        line = ask_line()
+        if(line == ending_line):
+            break
+        
+        fn(line)
 
 @command
 def note():
@@ -92,48 +227,6 @@ def task():
     """Write a new task into the current journal. Add notes to the task with 'note'"""
     generic_task()
 
-@command
-def new():
-    '''
-    Creates a new journal with the specified name, and then immediately calls 'set'.
-    '''
-    clear_console()
-    name = ask_line("Enter the name of the new journal:")
-
-    try:
-        os.mkdir(name)
-
-        set()
-    except Exception as e:
-        print("the new journal could not be made:")
-        print(e)
-
-
-@command
-def set():
-    '''Usage: set [number] - Set the current journal with a number.'''
-    clear_console()
-
-    refresh_journals()
-
-    num = int(ask_line(f"Pick a journal:\n{list_journals()}"))
-
-    set_journal(num)
-
-
-def set_journal(num):
-    global current_journal, current_filepath
-
-    refresh_journals()
-    if num >= len(available_journals):
-        print("Pick a valid number.")
-        return
-    current_journal = available_journals[num]
-
-    today = get_today()
-    current_filepath = make_journal_filepath(today)
-
-    show()
 
 def get_today():
     return datetime.date.today()
@@ -170,34 +263,6 @@ def write_journal_and_console(text):
     write_into_console(text)
 
 
-@command
-def show():
-    '''Usage: show [filter?]
-Show all entries in today's journal, filtered on 'tasks' or 'journals' if specified.'''
-
-    clear_console()
-    existing_text = get_journal_text()
-
-    filter = get_line()
-    if filter == None:
-        print(existing_text)
-        return
-
-    filter_map = {
-        "tasks" : 0, 
-        "journals" : 1,
-    }
-
-    if filter not in filter_map:
-        filter_list = ", ".join(filter_map)
-        print(f"{filter} is not a valid filter, use one of: {filter_list}")
-        return
-    
-    parts = existing_text.split("\n\n")
-    filter_num = filter_map[filter]
-
-    parts = [x for x in parts if get_part_type(x)==filter_num or get_part_type(x)==-1]
-    print("\n\n".join(parts))
 
 def get_part_type(part : str):
     if part.count("'''") >= 2:
@@ -217,38 +282,8 @@ def print_existing_text():
         write_journal_and_console(heading)
 
 
-def generic_input_to_journal(top, opening, closing, is_newline, input_fn, bullet="", show_existing=True):
-    clear_console()
-
-    if current_journal == None:
-        print("No journal has been set.")
-        return
-
-    print(top)
-
-    if show_existing:
-        print_existing_text()
-
-    if is_newline:
-        write_journal_and_console("\n")    
-
-    write_journal_and_console(bullet)
-    write_journal_and_console(f"{now_timestamp()} - ")
-    write_journal_and_console(opening)
-
-    input_fn()
-    
-    write_journal_and_console(closing)
-
-    clear_console()
-    print_existing_text()
 
 
-def multiline_input(bullet):
-    def to_journal(line):
-        write_into_journal(f"{bullet}{line}\n")
-
-    get_typed_input(to_journal, bullet, ending_line="'''")
 
 def single_line_input():
     line = get_line()
@@ -281,15 +316,6 @@ def bgtask():
     generic_task(background_level=1)
 
 
-def get_typed_input(fn, bullet, ending_line = "end"):
-    while True:
-        write_into_console(bullet)
-
-        line = ask_line()
-        if(line == ending_line):
-            break
-        
-        fn(line)
 
 
 def format_timestamp_tuple(ts):
@@ -319,28 +345,6 @@ def cwd():
 
 def write_carat():
     write_into_console(f"[{current_journal}]>")
-
-def start():
-    global current_journal
-
-    ensure_config()
-    
-    with open("path.txt", encoding="utf-8", mode="r") as file:
-        root = file.read().strip()
-        os.chdir(root)
-
-    refresh_journals()
-    
-    if len(available_journals) == 0:
-        print("You have no journals. Type /tutorial for the tutorial")
-    else:
-        print(f"You have {len(available_journals)} journals:")
-
-        current_journal = available_journals[0]
-        print(list_journals())
-
-        set_journal(0)
-        print(f"\nThe current journal is {0} ({current_journal}).\n Use 'help' to get help.")
 
 def ensure_config():
     '''This function will ask the user to input configuration details if they 
@@ -472,32 +476,6 @@ def day_week_index(wanted_day):
 
     return -1
 
-@command 
-def list():
-    """ - Create notes that span multiple lines.
-    - a
-    - little bit
-    - like 
-    - this
-    - write 'end' on a single line to close the entry.
-    """
-
-    def input_fn():
-        multiline_input("\t- ")
-
-    generic_input_to_journal(
-        is_newline=False, 
-        top="", 
-        opening="\n", 
-        closing="",
-        input_fn=input_fn,
-        bullet="\t"
-        )
-
-@command
-def l():
-    """An alias for 'list'"""
-
 def parse_timestamp(line : str):
     indent = 0
     while indent < len(line) and line[indent] == '\t':
@@ -551,7 +529,7 @@ def minutes_str(minutes):
     mins = minutes%60
     return f"{hours}h {mins}m"
 
-def delta_list(ongoing = False):
+def time_delta_list(ongoing = False):
     line_times = get_activities()
     line_times = [x for x in line_times if x[1].indent == 0]
     
@@ -574,7 +552,7 @@ def times():
     '''Show how much time has passed between each event'''
     clear_console()
 
-    dl = delta_list(True)
+    dl = time_delta_list(True)
 
     for prev, next, delta in dl:
         print(f"{prev.line}")
@@ -588,7 +566,7 @@ def total():
     # TODO: FIX
     # It would be much more efficient to just get the first activity, get now, and
     # do a single diff, but Im doing it like this because im tired (lmao)
-    dl = delta_list(True)
+    dl = time_delta_list(True)
     total = 0
     for prev, next, delta in dl:
         total += delta
@@ -608,7 +586,7 @@ than 'minutes' minutes get clustered together to reduce clutter"""
         minutes = 30
 
 
-    dl = delta_list(True)
+    dl = time_delta_list(True)
 
     collapsed_list = []
     total_time = 0

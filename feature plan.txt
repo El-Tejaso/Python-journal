@@ -1,17 +1,9 @@
-Current agenda:
-	- Move to RUST so we have a single binary
-	- 
+What to do next:
+	- Make journals also have end times
 
-Features:
-	- NO more command then text workflow, its bad
-		- All entries are tasks
-		- Any time you put a '-' at the start, it's a note
-		- any time you put some number of '*' at the start, it belongs to it's own 'thread'
-		- any time you put """ at the start, its a journal entry
-			- and you close it by typing """
-				OMG
-		
-		- Any time you put '/' at the start, its a command
-	- Nothing task, ability to finish tasks and be doing nothing
-		- or at least tagging tasks with some tag and being able to filter based on that tag
+What to do next next:
+	- Refactor code into objects?
+
+Later:
+	- Move to RUST so we have a single binary
 	- 
