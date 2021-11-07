@@ -2,8 +2,8 @@ from queue import Queue
 from actions import clear_console
 
 def exit_program():
-    print("exiting program...")
     clear_console()
+    print("exiting program...")
     exit(0)
 
 command_dict = {

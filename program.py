@@ -21,6 +21,33 @@ two_dig_number_regex = re.compile(r"(\d\d|\d)")
 Timestamp = namedtuple("Timestamp", "hours minutes indent")
 Activity = namedtuple("Activity", "line time")
 
+@command
+def help():
+    clear_console()
+    print("""
+Tutorial:
+    Write literally anything to enter a new task
+    
+    Write the '-' character followed by literally anything to annotate that task
+
+    Write ''' to start a journal
+
+Main commands:
+    /set to set the current journal
+
+    /new to create a new journal
+
+    /view to open entry in notepad. /view monday will open the entry for monday this week. (The other days also work)
+
+    /times to see how long between each entry
+
+    /entries to see how many entries you've done per month
+
+    /show to show today's journal entry. If it's blank, you'll get some tutorial text instead.
+        /show tasks will show only tasks
+        /show journals will show only journals
+""")
+
 
 def start():
     global current_journal
@@ -62,8 +89,11 @@ def set():
     clear_console()
 
     refresh_journals()
-    num = int(ask_line(f"Pick a journal:\n{list_journals()}"))
-    set_journal(num)
+    num = ask_line(f"Pick a journal:\n{list_journals()}")
+    try:
+        set_journal(int(num))
+    except:
+        exit_program()
 
 def refresh_journals():
     global available_journals
@@ -92,29 +122,46 @@ def show():
 Show all entries in today's journal, filtered on 'tasks' or 'journals' if specified.'''
 
     clear_console()
+
     existing_text = get_journal_text()
 
     filter = get_line()
-    if filter == None:
-        print(existing_text)
-        return
+    text = apply_filter(existing_text, filter)
 
+    if text != None:
+        print(text)    
+
+    if existing_text.strip() == '':
+        help()
+
+def apply_filter(text : str, filter : str):
+    if filter == None:
+        return text
+    
     filter_map = {
         "tasks" : 0, 
         "journals" : 1,
     }
 
     if filter not in filter_map:
-        filter_list = ", ".join(filter_map)
-        print(f"{filter} is not a valid filter, use one of: {filter_list}")
+        filter_list_str = ", ".join(filter_map)
+        print(f"{filter} is not a valid filter, use one of: {filter_list_str}")
         return
-    
-    parts = existing_text.split("\n\n")
+
+    blocks = text.split("\n\n")
     filter_num = filter_map[filter]
+    blocks = [x for x in blocks if get_part_type(x)==filter_num or get_part_type(x)==-1]
 
-    parts = [x for x in parts if get_part_type(x)==filter_num or get_part_type(x)==-1]
-    print("\n\n".join(parts))
+    return "\n\n".join(blocks)
 
+def get_part_type(part : str):
+    if part.count("'''") >= 2:
+        return 1
+
+    if timestamp_regex.search(part) == None:
+        return -1
+
+    return 0
 
 def run():
     line = ask_line()
@@ -264,14 +311,6 @@ def write_journal_and_console(text):
 
 
 
-def get_part_type(part : str):
-    if part.count("'''") >= 2:
-        return 1
-
-    if timestamp_regex.search(part) == None:
-        return -1
-
-    return 0
 
 def print_existing_text():
     existing_text = get_journal_text()
