@@ -210,6 +210,9 @@ def journal():
         show_existing=False
         )
 
+    push_command("finished entry")
+    note()
+
 
 def generic_input_to_journal(top, opening, closing, is_newline, input_fn, bullet="", show_existing=True):
     clear_console()
