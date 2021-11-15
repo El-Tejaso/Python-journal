@@ -25,32 +25,46 @@ Activity = namedtuple("Activity", "line time")
 def help():
     clear_console()
     print("""
-Tutorial:
-    Write /help to get to this tutorial again
+Enter /help to access this tutorial again later
 
-    Write any text to enter a new entry
-    
-    Write the '-' character followed by literally anything to annotate that entry
+Enter some text to make an entry. Mainly used for tracking tasks.
 
-    Write three single quotes like ''' to start a multiline entry, that can then be ended with another three '''
+Enter the '-' character followed by text to annotate the previous entry
 
-Main commands:
+Enter three single quotes like ''' to start a multiline entry, that can then be ended with another '''
+    usually used for writing long journal entries
+
+Enter /commands to see commands
+Enter /exit to exit
+""")
+
+def commands():
+    clear_console()
+    print("""
+Commands:
     /set to set the current journal
 
     /new to create a new journal
 
-    /view to open entry in notepad. /view monday will open the entry for monday this week. 
-        (The other days also work, as well as specific dates like 2021/12/29 (they must be in YYYY/MM/DD format))
+    /view to open the entry in a text editor. 
+        optionally, writing /view monday will open the entry for monday this week, as for the other days.
+            The other days also work
+            specific dates also work but they must be in YYYY/MM/DD format (i.e /view 2021/11/15)
 
     /times to see how long between each entry
 
     /entries to see how many entries you've done per month
 
-    /show to show today's journal entry. If it's blank, you'll get some tutorial text instead.
-        /show tasks will show only tasks
-        /show journals will show only journals
+    /show to show today's journal entry. If it's blank, you'll get help text instead.
+        /show tasks will show only single line entries
+        /show journals will show only multi-line entries
 
-        pressing enter with nothing written is the same as doing /show
+        Entering nothing is the same as doing /show
+
+    And of course, 
+        /help for help 
+        /commands for a list of commands and 
+        /exit to exit
 """)
 
 
