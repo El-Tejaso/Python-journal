@@ -104,10 +104,16 @@ def new():
 
 @command
 def set():
-    '''Usage: set [number] - Set the current journal with a number.'''
+    '''Usage: set [number] - Set the current journal with a number. 
+    If there is only one journal, the first one is used immediately.'''
     clear_console()
 
     refresh_journals()
+
+    if len(available_journals) == 1:
+        set_journal(0)
+        return
+
     num = ask_line(f"Pick a journal:\n{list_journals()}")
     try:
         set_journal(int(num))
@@ -192,15 +198,17 @@ def run():
         # Since there is only a single word, I may have actually tried typing a command here
         # so I will not auto-add a task here
         return
+
+    line = line.strip()
         
-    if line.strip().startswith("-"):
-        push_command(line[1:].strip())
+    if line.startswith("-"):
+        push_command(line.strip()[1:])
         note()
-    elif line.strip().startswith("'''"):
+    elif line.startswith("'''"):
         push_command(line[3:])
         journal()
-    elif line.strip().startswith("/"):
-        push_command(line[1:].strip())
+    elif line.startswith("/"):
+        push_command(line[1:])
         comm = get_input()
         run_command(comm)
     elif line.strip() != '':
@@ -413,8 +421,11 @@ def write_carat():
     write_into_console(f"[{current_journal}]>")
 
 def ensure_config():
-    '''This function will ask the user to input configuration details if they 
-    are not already present, or are otherwise corrupted/unreachable'''
+    '''
+    This function will generate a config file if it is not present.
+    right now, it contains:
+        the folderpath
+    '''
 
     if os.path.exists("path.txt"):
         with open("path.txt", encoding="utf-8", mode="r") as file:
@@ -422,20 +433,18 @@ def ensure_config():
             if path_is_accessible(path):
                 return
 
-    print("What folder would you like your journals to be stored in?")
-
-    usr_selected_path = ""
-    while True:
-        write_into_console("Enter a folder path: ")
-        usr_selected_path = input()
-
-        if path_is_accessible(usr_selected_path):
-            break
-
-        print("That folder is either nonexistant or non-accessible, try again.")
+    default_path = "journals"
+    abs_default_path = os.path.abspath(default_path)
 
     with open("path.txt", encoding="utf-8", mode="w") as file:
-        file.write(usr_selected_path)
+        file.write(default_path)
+
+    os.mkdir(default_path)
+    
+    print(f"Your journals will be stored in {default_path} (Absolute path is {abs_default_path}).\nYou can choose to move them, but you must specify this in path.txt")
+    print("Press [Enter] to continue...")
+    input()
+
 
 def path_is_accessible(path):
     if os.path.exists(path):
