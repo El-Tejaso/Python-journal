@@ -40,12 +40,12 @@ def get_path_day(path : str):
 
 	return int(name[start:end])
 
-def get_path_date_str(pathstr : str):
+def get_path_date(pathstr : str) -> datetime.date:
 	path = Path(pathstr)
 	if len(path.parts) < 3:
-		return ""
+		return None
 
-	return os.sep.join([path.parts[-3], path.parts[-2], str(get_path_day(path.parts[-1]))])
+	return datetime.date(int(path.parts[-3]), int(path.parts[-2]), get_path_day(path.parts[-1]))
 
 def get_entries_sorted(journal_name, year, month):
 	path = Path(journal_name)

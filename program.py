@@ -15,6 +15,9 @@ available_journals = []
 current_journal = None
 current_filepath = ""
 
+def is_today():
+    return make_journal_filepath(get_today()) == current_filepath
+
 timestamp_regex = re.compile(r"(\d\d|\d):(\d\d|\d) (AM|PM)")
 two_dig_number_regex = re.compile(r"(\d\d|\d)")
 
@@ -202,7 +205,7 @@ def run():
     line = line.strip()
         
     if line.startswith("-"):
-        push_command(line.strip()[1:])
+        push_command(line[1:].strip())
         note()
     elif line.startswith("'''"):
         push_command(line[3:])
@@ -290,7 +293,6 @@ def get_typed_input(fn, bullet, ending_line = "end"):
         
         fn(line)
 
-@command
 def note():
     '''Starting a line with - automatically executes this command. 
 Writes a new task but it's indented and directly on the next line, so its as if it's connected to whatever is above it.'''
@@ -304,7 +306,6 @@ Writes a new task but it's indented and directly on the next line, so its as if 
         bullet="\t"
         )
 
-@command
 def task():
     """Write a new task into the current journal. Add notes to the task with 'note'"""
     generic_task()
@@ -344,9 +345,6 @@ def write_journal_and_console(text):
     write_into_journal(text)
     write_into_console(text)
 
-
-
-
 def print_existing_text():
     existing_text = get_journal_text()
     if len(existing_text) > 0:
@@ -354,10 +352,6 @@ def print_existing_text():
     else:
         heading = f"\n[{current_journal}] - {entry.format_date(get_today())}\n\n"
         write_journal_and_console(heading)
-
-
-
-
 
 def single_line_input():
     line = get_line()
@@ -389,9 +383,6 @@ def bgtask():
 
     generic_task(background_level=1)
 
-
-
-
 def format_timestamp_tuple(ts):
     return format_timestamp(ts.hours, ts.minutes)
 
@@ -406,7 +397,17 @@ def format_timestamp(hour, minute):
 
 def now_timestamp():
     now = datetime.datetime.now()
-    return format_timestamp(now.hour, now.minute)
+    timestamp = format_timestamp(now.hour, now.minute)
+    
+    if is_today():
+        return timestamp
+
+    date_today = get_today()
+    date_past = entry.get_path_date(current_filepath)
+
+    days_later = (date_today - date_past).days
+
+    return f"{entry.format_date(date_today)} ({days_later} days later) - {timestamp}"
 
 def write_into_journal(text):
     with open(current_filepath, encoding="utf-8", mode="a") as file:
@@ -417,8 +418,12 @@ def cwd():
     '''Print the current path'''
     print(os.path.abspath(os.curdir))
 
-def write_carat():
-    write_into_console(f"[{current_journal}]>")
+def write_carat():        
+    text = current_journal
+    if not is_today():
+        text += f"(** OLD **)"
+
+    write_into_console(f"[{text}]>")
 
 def ensure_config():
     '''
@@ -471,6 +476,8 @@ def view():
         if day is a number:
             Opens the entry for <this year>/<this month>/day
 '''
+    global current_filepath
+
     arg1 = get_input()
     arg2 = get_input()
     arg3 = get_input()
@@ -491,8 +498,16 @@ def view():
         try:
             day = int(arg1)
         except:
-            named_day = arg1
-            date = namedday_this_week_to_date(named_day)
+            named_day = arg1.lower()
+            date = None
+
+            if named_day in "today":
+                date = get_today()
+            if named_day in "yesterday":
+                date = get_today() - datetime.timedelta(1)
+            else:
+                date = namedday_this_week_to_date(named_day)
+
             if date == None:
                 return
 
@@ -504,10 +519,16 @@ def view():
     if filepath == None:
         print(f"There is no entry for {year}/{month}/{day}")
         return
-    else:
-        print(f"Pulling up entry for {year}/{month}/{day} in an external editor...")
 
-    open_file(filepath)
+    current_filepath = filepath
+    show()
+
+
+@command
+def notepad():
+    '''Opens current journal in an external editor'''
+    print(f"Pulling up {current_filepath} in an external editor...")
+    open_file(current_filepath)
 
 
 def namedday_this_week_to_date(named_day : str):
@@ -724,3 +745,30 @@ def entries():
     
     entry_list = [f"{k} : {process_v(v)}" for k,v in entry_map.items()]
     print("\t" + "\n\t".join(entry_list))
+
+@command
+def hours():
+    '''Outputs the time that is h hours and m minutes after the start time'''
+
+    activities = get_activities()
+
+    if len(activities) == 0:
+        print("You haven't started anything today.")
+        return
+
+    start = activities[0].time
+
+    offsetH = ask_input("Enter the number of hours and optionally, the number of minutes")
+    
+    offsetM = get_input()
+
+    if offsetM == None:
+        offsetM = 0
+
+    try:
+        print(format_timestamp(start.hours + int(offsetH), start.minutes + int(offsetM)))
+    except:
+        if offsetM != 0:
+            print(f"{offsetH} or {offsetM} is probably not a valid number")
+        else:
+            print(f"{offsetH} is probably not a valid number")
