@@ -3,6 +3,17 @@ from pathlib import Path
 import datetime
 import os
 
+def make_journal_filepath(date, jorunal_name):
+	journal_dir = Path(jorunal_name).joinpath(date_folder(date))
+	if not journal_dir.exists():
+		journal_dir.mkdir(parents=True)
+
+	journal_file_dir = journal_dir.joinpath(
+		f"[{jorunal_name}] {to_2dig_number(date.day)}.txt"
+	)
+
+	filepath = str(journal_file_dir)
+	return filepath
 
 def to_2dig_number(num):
 	num = str(num)
@@ -72,3 +83,15 @@ def get_entry(journal_name, year, month, day):
 
 def get_journal_name():
 	return Path(os.path.abspath(".")).parts[-1]
+
+def get_entry_list(folder):
+    years = os.listdir(folder)
+    entry_map = {}
+
+    for year_path in years:
+        for month_path in os.listdir(os.path.join(folder, year_path)):
+            year = Path(year_path).parts[-1]
+            month = Path(month_path).parts[-1]
+            entry_map[year + " " + month] = get_entries_sorted(folder, year, month)
+
+    return entry_map

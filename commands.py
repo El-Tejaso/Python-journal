@@ -12,12 +12,17 @@ command_dict = {
 
 __args = Queue()
 
+def args_get() -> str:
+    try:
+        return __args.get(block=False)
+    except:
+        return None
 
 def command(fn):
     command_dict[fn.__name__] = fn
     return fn
 
-def push_command(arg):
+def push_command(arg : str):
     args = arg.split(' ')
     for a in args:
         __args.put(a)
@@ -34,24 +39,23 @@ def get_input():
 
     return arg
 
-def get_input():
+def pull_input():
     if __args.qsize() != 0:
-        return __args.get()
-
+        return args_get()
     return None
 
-def get_line():
+def pull_line():
     if __args.qsize() != 0:
         line = []
         while __args.qsize() != 0:
-            line.append(__args.get())
+            line.append(args_get())
         
         return " ".join(line)
 
     return None
 
 def ask_line(message_if_not_present = None):
-    line = get_line()
+    line = pull_line()
     if line != None:
         return line
 
@@ -62,25 +66,38 @@ def ask_line(message_if_not_present = None):
     return line
 
 def ask_input(message_if_not_present = ""):
-    line = get_input()
+    line = pull_input()
     if line == None:
         print(message_if_not_present)
         return get_input()
     return line
 
 def run_command(name):
-    if name in command_dict:
-        command_dict[name]()
+    possible_commands = [x for x in command_dict if x.startswith(name)]
+    if len(possible_commands) == 1:
+        command_dict[possible_commands[0]]()
         return True
+    elif len(possible_commands) > 1 and len(name.strip()) > 1:
+        print("did you mean any of these?")
+        for x in possible_commands:
+            print("/" + x)
+    elif len(name.strip()) == 0:
+        print("No command was provided")
+    else:
+        print(f"No existing commands start with '{name}'. Use /commands to see a list of commands")
+
     return False
 
-def print_help(functions):
-    functions = sorted(functions, key=lambda x: x.__name__)
+@command
+def commands():
+    clear_console()
+    print("Commands:")
 
-    for fn in functions:
-        doc = (fn.__doc__ if fn.__doc__ != None else "This command isn't documented.")
-        print(f"\t{fn.__name__} -> {doc}\n")
+    for command, fn in command_dict.items():
+        if fn.__doc__ == None:
+            continue
+        print(f"/{command}: {fn.__doc__.strip()}\n")
 
 def clear_args():
     while __args.qsize() > 0:
-        __args.get()
+        args_get()
