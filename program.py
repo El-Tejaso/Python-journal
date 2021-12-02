@@ -7,7 +7,6 @@ import os
 from pathlib import Path
 import entry
 import datetime
-import time
 from itertools import islice
 from collections import namedtuple
 import re
@@ -43,10 +42,27 @@ current_filepath = ""
 timestamp_regex = re.compile(r"(\d\d|\d):(\d\d|\d) (AM|PM)")
 two_dig_number_regex = re.compile(r"(\d\d|\d)")
 
+println_default = print
+println = println_default
+
+def stdout_default(text):
+    sys.stdout.write(text)
+    sys.stdout.flush()
+
+stdout = stdout_default
+
+def set_stdout(stream):
+    global stdout
+    stdout = stdout_default if stream==None else stream
 
 def set_date_provider(provider=None):
     global get_today
     get_today = get_today_default if provider == None else provider
+
+
+def set_time_provider(provider=None):
+    global get_now
+    get_now = get_now_default if provider == None else provider
 
 
 def set_config_filename(filename=None):
@@ -57,6 +73,11 @@ def set_config_filename(filename=None):
 def set_default_journals_path(path):
     global default_journals_path
     default_journals_path = default_journals_path_default if path == None else path
+
+
+def set_println(print_fn=None):
+    global println
+    println = println_default if print_fn is None else print_fn
 
 
 def is_today():
@@ -70,7 +91,7 @@ def help():
     '''
 
     clear_console()
-    print("""
+    println("""
 Enter /help to access this tutorial again later
 
 Enter some text to make an entry. Mainly used for tracking tasks.
@@ -116,8 +137,8 @@ def new():
             set()
             break
         except Exception as e:
-            print(f"the name '{name}' was probably invalid, try another one")
-            print(e)
+            println(f"the name '{name}' was probably invalid, try another one")
+            println(e)
 
 
 @command
@@ -155,7 +176,7 @@ def set_journal(num):
 
     refresh_journals()
     if num >= len(available_journals):
-        print("Pick a valid number.")
+        println("Pick a valid number.")
         return
     current_journal = available_journals[num]
 
@@ -187,7 +208,7 @@ def show():
     text = apply_filter(existing_text, filter)
 
     if text != None:
-        print(text)
+        println(text)
 
     if existing_text.strip() == '':
         help()
@@ -204,7 +225,7 @@ def apply_filter(text: str, filter: str):
 
     if filter not in filter_map:
         filter_list_str = ", ".join(filter_map)
-        print(f"{filter} is not a valid filter, use one of: {filter_list_str}")
+        println(f"{filter} is not a valid filter, use one of: {filter_list_str}")
         return
 
     blocks = text.split("\n\n")
@@ -284,10 +305,10 @@ def generic_input_to_journal(top, opening, closing, is_newline, input_fn, bullet
     clear_console()
 
     if current_journal == None:
-        print("No journal has been set.")
+        println("No journal has been set.")
         return
 
-    print(top)
+    println(top)
 
     if show_existing:
         print_existing_text()
@@ -369,9 +390,7 @@ def get_journal_text():
 
 
 def write_into_console(text):
-    sys.stdout.write(text)
-    sys.stdout.flush()
-
+    stdout(text)
 
 def write_journal_and_console(text):
     write_into_journal(text)
@@ -381,7 +400,7 @@ def write_journal_and_console(text):
 def print_existing_text():
     existing_text = get_journal_text()
     if len(existing_text) > 0:
-        print(existing_text)
+        println(existing_text)
     else:
         heading = f"\n[{current_journal}] - {entry.format_date(get_today())}\n\n"
         write_journal_and_console(heading)
@@ -439,7 +458,7 @@ def write_into_journal(text):
 @command
 def cwd():
     '''Print the current path'''
-    print(os.path.abspath(os.curdir))
+    println(os.path.abspath(os.curdir))
 
 
 def write_carat():
@@ -469,10 +488,11 @@ def ensure_config():
 
     os.mkdir(default_path)
 
-    print(
-        f"Your journals will be stored in {default_path} (Absolute path is {abs_default_path}).\nYou can choose to move them, but you must specify this in path.txt")
-    print("Press [Enter] to continue...")
-    input()
+    println(
+        f"""Your journals will be stored in {default_path} (Absolute path is {abs_default_path}).
+You can choose to move them, but you must specify this in path.txt""")
+    println("Press [Enter] to continue...")
+    get_input()
 
 
 def path_is_accessible(path):
@@ -544,7 +564,7 @@ def view():
     filepath = entry.get_entry(current_journal, year, month, day)
 
     if filepath == None:
-        print(f"There is no entry for {year}/{month}/{day}")
+        println(f"There is no entry for {year}/{month}/{day}")
         return
 
     current_filepath = filepath
@@ -555,7 +575,7 @@ def view():
 def notepad():
     '''Opens current journal in an external editor'''
 
-    print(f"Pulling up {current_filepath} in an external editor...")
+    println(f"Pulling up {current_filepath} in an external editor...")
     open_file(current_filepath)
 
 
@@ -564,14 +584,14 @@ def namedday_this_week_to_date(named_day: str):
 
     wanted_day_idx = day_week_index(named_day)
     if wanted_day_idx == -1:
-        print(f"{named_day} does not remotely resemble any day")
+        println(f"{named_day} does not remotely resemble any day")
         return None
 
     today = get_today()
     today_day_idx = day_week_index(today.strftime("%A").lower())
 
     if wanted_day_idx > today_day_idx:
-        print(
+        println(
             f"today is {days_of_week[today_day_idx]}, so {days_of_week[wanted_day_idx]} has not happened yet.")
         return
 
@@ -685,10 +705,10 @@ def times():
     dl = time_delta_list(True)
 
     for prev, next, delta in dl:
-        print(f"{prev.line}")
-        print(f"\t[{minutes_str(delta)}]")
+        println(f"{prev.line}")
+        println(f"\t[{minutes_str(delta)}]")
 
-    print(f"{dl[-1][1].line}")
+    println(f"{dl[-1][1].line}")
     total()
 
 
@@ -701,7 +721,7 @@ def total():
     now = get_now()
     total = timedelta(activities[0].time, Timestamp(now.hour, now.minute, 0))
 
-    print(f"\nTotal: {minutes_str(total)}")
+    println(f"\nTotal: {minutes_str(total)}")
 
 
 @command
@@ -711,13 +731,13 @@ def entries():
 
     entry_map = entry.get_entry_list(current_journal)
 
-    print("Entries:")
+    println("Entries:")
 
     def process_v(v):
         return f" {entry.to_2dig_number(len(v))} entries " + "|" * len(v)
 
     entry_list = [f"{k} : {process_v(v)}" for k, v in entry_map.items()]
-    print("\t" + "\n\t".join(entry_list))
+    println("\t" + "\n\t".join(entry_list))
 
 
 @command
@@ -727,7 +747,7 @@ def hours():
     activities = get_activities()
 
     if len(activities) == 0:
-        print("You haven't started anything today.")
+        println("You haven't started anything today.")
         return
 
     start = activities[0].time
@@ -741,13 +761,13 @@ def hours():
         offsetM = 0
 
     try:
-        print(format_timestamp(start.hours +
-              int(offsetH), start.minutes + int(offsetM)))
+        println(format_timestamp(start.hours +
+                                 int(offsetH), start.minutes + int(offsetM)))
     except:
         if offsetM != 0:
-            print(f"{offsetH} or {offsetM} is probably not a valid number")
+            println(f"{offsetH} or {offsetM} is probably not a valid number")
         else:
-            print(f"{offsetH} is probably not a valid number")
+            println(f"{offsetH} is probably not a valid number")
 
 
 @command
@@ -763,7 +783,7 @@ def name():
         "Enter a name for this entry. You will be able to get back here with /view").strip()
 
     if new_name.strip() == "":
-        print("Are you sure you want to unname this journal?")
+        println("Are you sure you want to unname this journal?")
         if ask_input().lower() not in "yes":
             return
 
@@ -783,11 +803,12 @@ def named():
     wanted_name = pull_input()
 
     if wanted_name == None:
-        print("named journals:")
+        println("named journals:")
         for name, filepath in name_map.items():
-            print(f"{name} : {filepath}")
+            println(f"{name} : {filepath}")
 
-        print("enter a name along with this command to open one or to filter through them.")
+        println(
+            "enter a name along with this command to open one or to filter through them.")
     else:
         global current_filepath
         current_filepath = name_map[wanted_name]

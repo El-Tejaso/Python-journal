@@ -1,0 +1,13 @@
+
+[Test journal] - 2/3/1995
+
+
+6:00 AM - First entry
+	6:01 AM - annotation
+	6:01 AM - annotation
+
+6:10 AM - '''
+	multiline
+	entry
+'''
+	6:15 AM - finished entry
