@@ -24,8 +24,14 @@ def to_2dig_number(num):
 def format_date(date):
 	return f"{date.day}/{date.month}/{date.year}"
 
+def year_folder(year) -> Path:
+	return Path(str(year))
+
 def date_folder(date) -> Path:
-	return Path(str(date.year), str(to_2dig_number(date.month)))
+	return year_month_folder(date.year, date.month)
+
+def year_month_folder(year, month):
+	return Path(year_folder(year), str(to_2dig_number(month)))
 
 def date_filepath(date) -> Path:
 	return date_folder(date).joinpath(date.day)
@@ -84,14 +90,23 @@ def get_entry(journal_name, year, month, day):
 def get_journal_name():
 	return Path(os.path.abspath(".")).parts[-1]
 
+def list_years(folder):
+	years = os.listdir(folder)
+	years = [x for x in years if is_valid_journal(x)]
+	return years
+
+def list_months(folder, year_path):
+	return os.listdir(os.path.join(folder, year_path))
+	
 def get_entry_list(folder):
-    years = os.listdir(folder)
-    entry_map = {}
+	years = list_years(folder)
 
-    for year_path in years:
-        for month_path in os.listdir(os.path.join(folder, year_path)):
-            year = Path(year_path).parts[-1]
-            month = Path(month_path).parts[-1]
-            entry_map[year + " " + month] = get_entries_sorted(folder, year, month)
+	entry_map = {}
 
-    return entry_map
+	for year_path in years:
+		for month_path in list_months(folder, year_path):
+			year = Path(year_path).parts[-1]
+			month = Path(month_path).parts[-1]
+			entry_map[year + " " + month] = get_entries_sorted(folder, year, month)
+
+	return entry_map

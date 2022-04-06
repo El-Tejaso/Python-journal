@@ -35,9 +35,22 @@ config_filename = config_filename_default
 default_journals_path_default = "journals"
 default_journals_path = default_journals_path_default
 
+# I should have been keeping track of the current date, not the current filepath.
+# It has gotten extremely hard to add features as a result.
+# Not sure how I will avoid this kind of mistake in the future either
 available_journals = []
 current_journal = None
 current_filepath = ""
+
+# TODO: how would we cache this? idk, not even remotely a priority
+def get_journal_text():
+    existing_text = ""
+    try:
+        existing_text = fileio.read(current_filepath).strip()
+    except:
+        pass
+
+    return existing_text
 
 timestamp_regex = re.compile(r"(\d\d|\d):(\d\d|\d) (AM|PM)")
 two_dig_number_regex = re.compile(r"(\d\d|\d)")
@@ -213,6 +226,36 @@ def show():
     if existing_text.strip() == '':
         help()
 
+@command
+def show_last():
+    try:
+        num_entries = int(pull_input())
+    except:
+        println("needs to be a number")
+
+    page_num = pull_input()
+
+    starting_date = entry.get_path_date(current_filepath)
+    if page_num != None:
+        page_num = int(page_num) - 1
+        entry_range = get_entry_range(starting_date, -page_num * num_entries)
+        if len(entry_range) > 0:
+            starting_date = entry.get_path_date(entry_range[-1])
+
+    entry_range = get_entry_range(starting_date, -num_entries)
+    entry_range.reverse()
+
+    entry_texts = []
+    for e in entry_range:
+        entry_texts.append(fileio.read(e))
+
+    clear_console()
+    println("""
+
+==================== <new page> ====================
+
+
+""".join(entry_texts))
 
 def apply_filter(text: str, filter: str):
     if filter == None:
@@ -258,7 +301,7 @@ def run():
 
     if line.startswith("-"):
         push_command(line[1:].strip())
-        note()
+        task()
     elif line.startswith("'''"):
         push_command(line[3:])
         journal()
@@ -268,7 +311,7 @@ def run():
         run_command(comm)
     elif line.strip() != '':
         push_command(line)
-        task()
+        note()
     else:
         show()
 
@@ -348,8 +391,12 @@ def get_typed_input(fn, bullet, ending_line="end"):
 
 
 def note():
-    '''Starting a line with - automatically executes this command. 
+    '''
 Writes a new task but it's indented and directly on the next line, so its as if it's connected to whatever is above it.'''
+
+    current_text = get_journal_text()
+    if(current_text.strip() == ""):
+        return task()
 
     generic_input_to_journal(
         is_newline=False,
@@ -362,7 +409,8 @@ Writes a new task but it's indented and directly on the next line, so its as if 
 
 
 def task():
-    """Write a new task into the current journal. Add notes to the task with 'note'"""
+    """Starting a line with '-' automatically executes this command. 
+Write a new task into the current journal. Add notes to the task with 'note'"""
     generic_task()
 
 
@@ -379,14 +427,6 @@ def make_journal_filepath(date):
     return filepath
 
 
-def get_journal_text():
-    existing_text = ""
-    try:
-        existing_text = fileio.read(current_filepath).strip()
-    except:
-        pass
-
-    return existing_text
 
 
 def write_into_console(text):
@@ -563,13 +603,122 @@ def view():
 
     filepath = entry.get_entry(current_journal, year, month, day)
 
-    if filepath == None:
+    chosen_date = datetime.date(year=year,month=month,day=day)
+    if filepath == None and chosen_date != today:
         println(f"There is no entry for {year}/{month}/{day}")
         return
+    
+    if chosen_date == today:
+        filepath = entry.date_filepath(today)
 
     current_filepath = filepath
+    println(f"moved to {current_filepath} for {year}, {month}, {day}")
     show()
 
+
+@command 
+def prev():
+    '''usage: 
+            /prev [number?]
+
+    Goes to the previous journal (Not the previous day)
+'''
+    global current_filepath
+
+    amount = 1
+
+    try:
+        amount = int(pull_input())
+    except:
+        pass
+
+    move(-amount)
+
+def last_day_of_month(date:datetime.date):
+    next_month = date.replace(day=28) + datetime.timedelta(days=4)
+    return next_month - datetime.timedelta(days=next_month.day)
+
+def get_entry_range(date_from, num_entries):
+    ''''num_entries can be negative. This means we will n entries backwards from date_from, inclusive'''
+
+    all_entries = []
+
+    dir = 1
+    if num_entries < 0:
+        num_entries = -num_entries
+        dir = -1
+
+    years = entry.list_years(current_journal)
+    year_idx = years.index(str(date_from.year))
+
+    while year_idx >= 0 and year_idx < len(years) and num_entries > 0:
+        year = date_from.year
+        month = date_from.month
+
+        entries = entry.get_entries_sorted(current_journal, year, month)
+
+        idx = find_nearest_entry(entries, date_from, dir)
+
+        while idx >= 0 and idx < len(entries) and num_entries > 0:
+            all_entries.append(entries[idx])
+            num_entries -= 1
+            idx += dir
+        
+        if dir > 0:
+            date_from = last_day_of_month(date_from) + datetime.timedelta(days=1)
+        else:
+            date_from = last_day_of_month(date_from - datetime.timedelta(days=date_from.day+1))
+
+        print(date_from)
+        year_idx = years.index(str(date_from.year))
+    
+    return all_entries
+
+def move(amount):
+    global current_filepath
+    current_date = entry.get_path_date(current_filepath)
+
+    if amount < 0:
+        amount -= 1
+    elif amount > 0:
+        amount += 1
+
+    range = get_entry_range(current_date, amount)
+    current_filepath = range[-1]
+    show()
+
+
+def find_nearest_entry(entries, date, dir):
+    '''Finds the nearest entry just before [date] in a given [dir]ection'''
+    if len(entries) == 0:
+        return -1
+
+    if dir > 0:
+        idx = 0
+        found = False
+        while idx < len(entries):
+            if entry.get_path_date(entries[idx])  >= date:
+                found = True
+                break
+
+            idx += 1
+        
+        if found:
+            return idx
+    else:
+        idx = len(entries) - 1
+        found = False
+        while idx >= 0:
+            if entry.get_path_date(entries[idx])  <= date:
+                found = True
+                break
+
+            idx -= 1
+        
+        if found:
+            return idx
+
+    return -1
 
 @command
 def notepad():

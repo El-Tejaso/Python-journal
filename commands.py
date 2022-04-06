@@ -90,13 +90,13 @@ def ask_input(message_if_not_present=""):
     return line
 
 
-def run_command(name):
+def run_command(name:str):
     possible_commands = [x for x in command_dict if x.startswith(name)]
     if len(possible_commands) == 1:
         command_dict[possible_commands[0]]()
         return True
     elif len(possible_commands) > 1 and len(name.strip()) > 1:
-        print("did you mean any of these?")
+        print(f"{name} could not be found. did you mean any of these?")
         for x in possible_commands:
             print("/" + x)
     elif len(name.strip()) == 0:

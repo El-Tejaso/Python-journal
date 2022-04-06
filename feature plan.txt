@@ -1,9 +1,33 @@
 What to do next:
-	- Make journals also have end times
-
-What to do next next:
-	- Refactor code into objects?
-
+	- Create entries at a future date. Would be interesting to go to an entry to recieve a message from you from the past.
+	
+Testing checklist:
+	- Core functionality
+		- Initializing the program
+		- creating journals
+		- choosing among multiple journals
+		- Writing entries
+			- Make sure timestamps work properly
+				- 11:59 AM -> 12:00 PM
+				- 12:00PM -> 00:00 AM
+				- 5:00 AM
+				- 5:32 PM
+				- From the future
+				- From the past
+		- Annotating entries
+		- writing entries spanning multiple lines
+			- Has ending annotation
+		- Viewing old entries
+			- Year, month, day
+			- Month, day
+			- day
+			- named day of the week
+		- Writing in old entries
+			- Shouldnt be able to create entries in the past
+				- am addign support for creating in the future tho
+		- Writing in past entries
+	
+	
 Later:
-	- Move to RUST so we have a single binary
-	- 
+	- Move to RUST so we have a single binary and no need to install python
+	- also we get to learn rust
