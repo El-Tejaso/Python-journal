@@ -14,7 +14,7 @@ def open_file(filepath):
 		subprocess.call(('xdg-open', filepath))
 
 
-should_clear = False
+should_clear = True
 
 # cheers https://www.delftstack.com/howto/python/python-clear-console/
 

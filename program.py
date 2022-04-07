@@ -309,6 +309,8 @@ def run():
         push_command(line[1:])
         comm = pull_input()
         run_command(comm)
+    elif line.strip() == "~":
+        toggle()
     elif line.strip() != '':
         push_command(line)
         note()
@@ -615,6 +617,34 @@ def view():
     println(f"moved to {current_filepath} for {year}, {month}, {day}")
     show()
 
+@command 
+def toggle():
+    '''Toggles the last task to a note/last note to a task. Useful if you forgot the - . 
+
+Writing ~ on it's own is a shorthand for this command.
+'''
+    current_text = get_journal_text()
+    
+    last_task_pos = current_text.rfind("\n\n")
+    last_note_pos = current_text.rfind("\n\t")
+
+    if last_task_pos == -1 or last_note_pos == -1:
+        println("couldn't toggle.")
+        println(current_text.__repr__())
+        return
+
+    if last_task_pos > last_note_pos:
+        # convert to a note
+        current_text = current_text[0:last_task_pos] + "\n\t" + current_text[last_task_pos+2:]
+    else:
+        # convert to a 
+        current_text = current_text[0:last_note_pos] + "\n\n" + current_text[last_note_pos+2:]
+
+    if current_text[-1] != '\n':
+        current_text += '\n'
+
+    fileio.write(current_filepath, current_text)
+    show()
 
 @command 
 def prev():

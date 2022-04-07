@@ -13,6 +13,8 @@ Typing more will add a note to the current task.
 
 Typing a dash (`-`) before anything will start a new task.
 
+Typing a tilde/squiggle (`~`) will toggle the last line between a note and a task. It is useful for when you forget the `-`.
+
 If you want to view the past 6 entries, then type `/show_last 6`. This command will show the last 6 entries all together in the console. The command `/show_last 6 2` will show the last 6 to 12 entries (`6` is the number of previous entries to show, and `2` is the page number). This is the only cool command imo, but there are others you can find out about with `/help`.
 
 ## How to make a windows shortcut for this program
