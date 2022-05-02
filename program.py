@@ -309,6 +309,9 @@ def run():
         push_command(line[1:])
         comm = pull_input()
         run_command(comm)
+    elif line.startswith("*"):
+        push_command(line[1:])
+        search_replace()
     elif line.strip() == "~":
         toggle()
     elif line.strip() != '':
@@ -645,6 +648,45 @@ Writing ~ on it's own is a shorthand for this command.
 
     fileio.write(current_filepath, current_text)
     show()
+
+@command 
+def search_replace():
+    '''Does a search and replace on the last line. Use it to fix typos, if you care. 
+
+Writing something like *wprd->word is shorthand for /search_replace wprd->word
+'''
+    input = pull_line()
+    try:
+        [searchstr, replStr] = input.split("->")
+    except:
+        println("only works with one ->")
+        return
+
+    current_text = get_journal_text()
+    
+    last_task_pos = current_text.rfind("\n\n")
+    last_note_pos = current_text.rfind("\n\t")
+
+    if last_task_pos == -1 or last_note_pos == -1:
+        println("couldn't toggle.")
+        println(current_text.__repr__())
+        return
+
+    
+    if last_task_pos > last_note_pos:
+        last_line_pos = last_task_pos
+    else:
+        last_line_pos = last_note_pos
+
+    last_line_new = current_text[last_line_pos:].replace(searchstr, replStr)
+    current_text = current_text[0:last_line_pos] + last_line_new
+
+    if current_text[-1] != '\n':
+        current_text += '\n'
+
+    fileio.write(current_filepath, current_text)
+    show()
+
 
 @command 
 def prev():
